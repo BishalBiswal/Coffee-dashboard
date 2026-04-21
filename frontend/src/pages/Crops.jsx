@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { cropsAPI } from '../lib/api';
 import { Wheat, Download, Edit2, Trash2, X, Check, Plus, History } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function Crops() {
   const [crops, setCrops] = useState([]);
@@ -62,23 +63,20 @@ export default function Crops() {
   };
 
   const handleExport = () => {
-    const csvContent = [
-      ['Name', 'Scientific Name', 'Type', 'Density/ha', 'Created At'].join(','),
-      ...crops.map(c => [
-        c.name,
-        (c.scientific_name || '').replace(/,/g, ';'),
-        c.crop_type,
-        c.planting_density_per_hectare || '',
-        c.created_at
-      ].join(','))
-    ].join('\n');
+    const data = crops.map(c => ({
+      Name: c.name,
+      'Scientific Name': c.scientific_name || '',
+      Type: c.crop_type,
+      'Density/ha': c.planting_density_per_hectare || '',
+      'Created At': c.created_at ? new Date(c.created_at).toLocaleDateString() : '',
+    }));
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `crops_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 20 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Crops');
+    XLSX.writeFile(wb, `crops_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const cropTypeColors = {

@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
 from datetime import datetime, timedelta, date
 from calendar import monthrange
-from apps.core_app.models import DailyWorkLog, Block, Crop, WorkLogAttendance
+from apps.core_app.models import DailyWorkLog, Block, Crop, WorkLogAttendance, WorkType, InventoryTransaction
 
 
 @api_view(['GET'])
@@ -33,6 +33,100 @@ def dashboard_summary(request):
             work_log__log_date=today
         ).values('worker').distinct().count(),
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def cost_breakdown(request):
+    date_from_str = request.query_params.get('date_from')
+    date_to_str = request.query_params.get('date_to')
+    
+    if date_from_str:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+    else:
+        date_from = datetime.now().date() - timedelta(days=30)
+    
+    if date_to_str:
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+    else:
+        date_to = datetime.now().date()
+    
+    logs = DailyWorkLog.objects.filter(
+        log_date__range=[date_from, date_to]
+    ).select_related('work_type')
+    
+    categories_data = {}
+    for log in logs:
+        category = log.work_type.category
+        if category not in categories_data:
+            categories_data[category] = {'cost': 0, 'work_types': {}, 'labour': 0}
+        
+        male_cost = float(log.male_labour_count or 0) * 150
+        female_cost = float(log.female_labour_count or 0) * 170
+        total_cost = male_cost + female_cost
+        
+        categories_data[category]['cost'] += total_cost
+        categories_data[category]['labour'] += log.male_labour_count + log.female_labour_count
+        
+        wt_name = log.work_type.name
+        if wt_name not in categories_data[category]['work_types']:
+            categories_data[category]['work_types'][wt_name] = {'cost': 0, 'labour': 0, 'logs': []}
+        categories_data[category]['work_types'][wt_name]['cost'] += total_cost
+        categories_data[category]['work_types'][wt_name]['labour'] += log.male_labour_count + log.female_labour_count
+        categories_data[category]['work_types'][wt_name]['logs'].append({
+            'date': log.log_date.isoformat(),
+            'cost': total_cost,
+            'labour': log.male_labour_count + log.female_labour_count,
+            'block': log.block.name if log.block else None,
+        })
+    
+    material_trans = InventoryTransaction.objects.filter(
+        date__range=[date_from, date_to]
+    ).select_related('item')
+    
+    materials_data = {}
+    for trans in material_trans:
+        cat = trans.item.category
+        sub_cat = trans.item.sub_category or 'Other'
+        if cat not in materials_data:
+            materials_data[cat] = {}
+        if sub_cat not in materials_data[cat]:
+            materials_data[cat][sub_cat] = {'in_qty': 0, 'out_qty': 0, 'in_cost': 0, 'out_cost': 0, 'items': {}}
+        
+        qty = float(trans.quantity or 0)
+        rate = float(trans.item.rate_per_unit or 0)
+        cost = qty * rate
+        
+        if trans.transaction_type == 'IN':
+            materials_data[cat][sub_cat]['in_qty'] += qty
+            materials_data[cat][sub_cat]['in_cost'] += cost
+        else:
+            materials_data[cat][sub_cat]['out_qty'] += qty
+            materials_data[cat][sub_cat]['out_cost'] += cost
+        
+        item_name = trans.item.name
+        item_unit = trans.item.unit
+        if item_name not in materials_data[cat][sub_cat]['items']:
+            materials_data[cat][sub_cat]['items'][item_name] = {'in_qty': 0, 'out_qty': 0, 'in_cost': 0, 'out_cost': 0, 'rate': rate, 'unit': item_unit}
+        if trans.transaction_type == 'IN':
+            materials_data[cat][sub_cat]['items'][item_name]['in_qty'] += qty
+            materials_data[cat][sub_cat]['items'][item_name]['in_cost'] += cost
+        else:
+            materials_data[cat][sub_cat]['items'][item_name]['out_qty'] += qty
+            materials_data[cat][sub_cat]['items'][item_name]['out_cost'] += cost
+    
+    result = {
+        'categories': {cat: {
+            'cost': data['cost'],
+            'labour': data['labour'],
+            'work_types': [{'name': wt, 'cost': wt_data['cost'], 'labour': wt_data['labour'], 'logs': wt_data.get('logs', [])} for wt, wt_data in data['work_types'].items()]
+        } for cat, data in categories_data.items()},
+        'materials': materials_data,
+        'date_from': date_from.isoformat(),
+        'date_to': date_to.isoformat(),
+    }
+    
+    return Response(result)
 
 
 @api_view(['GET'])

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { workLogsAPI, blocksAPI, cropsAPI, seasonsAPI } from '../lib/api';
 import { ClipboardList, Plus, Search, Calendar, Users, Edit2, Trash2, Download, X, Check, Filter, Clock } from 'lucide-react';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 export default function WorkLogs() {
   const [logs, setLogs] = useState([]);
@@ -145,30 +146,37 @@ export default function WorkLogs() {
       });
       const allLogs = response.data.results || response.data;
       
-      // Build XLSX manually with XML
-      const xlsContent = [
-        ['Date', 'Block', 'Crop', 'Row', 'Work Type', 'Work Detail', 'Male', 'Female', 'Total', 'Status', 'Notes'].join('\t'),
-        ...allLogs.map(log => [
-          log.log_date,
-          log.block_name,
-          log.crop_name,
-          log.row_number || '',
-          log.work_type_name,
-          (log.work_detail || '').replace(/\t/g, ' '),
-          log.male_labour_count,
-          log.female_labour_count,
-          log.total_labour_count,
-          log.status,
-          (log.notes || '').replace(/\t/g, ' ')
-        ].join('\t'))
-      ].join('\n');
+      const data = allLogs.map(log => ({
+        Date: log.log_date,
+        Block: log.block_name,
+        Crop: log.crop_name,
+        Season: log.season_name || '',
+        Row: log.row_number || '',
+        'Work Type': log.work_type_name,
+        'Work Detail': log.work_detail || '',
+        Male: log.male_labour_count,
+        Female: log.female_labour_count,
+        Total: log.total_labour_count,
+        Hours: log.hours_worked || 8,
+        Status: log.status,
+        Workers: (log.workers_assigned && log.workers_assigned.length > 0) 
+          ? log.workers_assigned.map(w => w.worker_name).join(', ')
+          : '',
+        Notes: log.notes || '',
+      }));
 
-      const blob = new Blob(['\ufeff' + xlsContent], { type: 'application/vnd.ms-excel' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `work_logs_${new Date().toISOString().split('T')[0]}.xls`;
-      a.click();
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Work Logs');
+      
+      const colWidths = [
+        { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 14 }, { wch: 6 },
+        { wch: 18 }, { wch: 20 }, { wch: 8 }, { wch: 8 }, { wch: 8 },
+        { wch: 8 }, { wch: 10 }, { wch: 30 }, { wch: 30 }
+      ];
+      ws['!cols'] = colWidths;
+      
+      XLSX.writeFile(wb, `work_logs_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error('Export failed:', error);
     }

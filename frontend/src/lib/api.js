@@ -93,7 +93,7 @@ export const workLogsAPI = {
   update: (id, data) => api.patch(`/work-logs/${id}/`, data),
   delete: (id) => api.delete(`/work-logs/${id}/`),
   today: () => api.get('/work-logs/today/'),
-  assignWorkers: (id, workerIds) => api.post(`/work-logs/${id}/assign_workers/`, { worker_ids: workerIds }),
+  assignWorkers: (id, workers) => api.post(`/work-logs/${id}/assign_workers/`, { workers }),
 };
 
 export const workTypesAPI = {
@@ -106,6 +106,7 @@ export const analyticsAPI = {
   blockSummary: (params) => api.get('/analytics/block-summary/', { params }),
   cropSummary: (params) => api.get('/analytics/crop-summary/', { params }),
   costSummary: (params) => api.get('/analytics/cost-summary/', { params }),
+  costBreakdown: (params) => api.get('/analytics/cost-breakdown/', { params }),
 };
 
 export const weatherAPI = {

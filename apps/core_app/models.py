@@ -242,7 +242,45 @@ class InventoryItem(models.Model):
         ('Tools', 'Tools'),
         ('Consumables', 'Consumables'),
         ('Produce', 'Produce'),
+        ('Expense', 'Expense'),
     ]
+
+    SUB_CATEGORIES = {
+        'BaseMaterial': [
+            ('Micronutrients', 'Micronutrients'),
+            ('SoilAmendments', 'Soil Amendments'),
+            ('Microorganisms', 'Microorganisms'),
+            ('Other', 'Other'),
+        ],
+        'Solutions': [
+            ('GrowthPromoters', 'Growth Promoters'),
+            ('PestControl', 'Pest Control'),
+            ('Fertilizers', 'Fertilizers'),
+            ('Other', 'Other'),
+        ],
+        'Tools': [
+            ('HandTools', 'Hand Tools'),
+            ('PowerTools', 'Power Tools'),
+            ('Other', 'Other'),
+        ],
+        'Consumables': [
+            ('Hardware', 'Hardware'),
+            ('Safety', 'Safety'),
+            ('Other', 'Other'),
+        ],
+        'Produce': [
+            ('Spices', 'Spices'),
+            ('Timber', 'Timber'),
+            ('Compost', 'Compost'),
+            ('Other', 'Other'),
+        ],
+        'Expense': [
+            ('Labour', 'Labour'),
+            ('Transport', 'Transport'),
+            ('Maintenance', 'Maintenance'),
+            ('Other', 'Other'),
+        ],
+    }
 
     UNIT_TYPES = [
         ('GMS', 'Grams'),
@@ -254,6 +292,7 @@ class InventoryItem(models.Model):
 
     name = models.CharField(max_length=150)
     category = models.CharField(max_length=50, choices=CATEGORIES)
+    sub_category = models.CharField(max_length=50, blank=True)
     unit = models.CharField(max_length=20, choices=UNIT_TYPES, default='NOS')
     current_stock = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     min_stock_level = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -262,7 +301,7 @@ class InventoryItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['category', 'name']
+        ordering = ['category', 'sub_category', 'name']
 
     def __str__(self):
         return f"{self.name} ({self.category})"

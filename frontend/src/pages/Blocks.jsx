@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { blocksAPI, cropsAPI } from '../lib/api';
 import { Trees, ChevronRight, Plus, Download, Edit2, Trash2, X, Check, History } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function Blocks() {
   const [blocks, setBlocks] = useState([]);
@@ -49,22 +50,21 @@ export default function Blocks() {
   };
 
   const handleExport = () => {
-    const csvContent = [
-      ['Name', 'Location', 'Area (Ha)', 'Created At'].join(','),
-      ...blocks.map(b => [
-        b.name,
-        (b.location || '').replace(/,/g, ';'),
-        b.total_area_hectares || '',
-        b.created_at
-      ].join(','))
-    ].join('\n');
+    const data = blocks.map(b => ({
+      Name: b.name,
+      Location: b.location || '',
+      'Area (Ha)': b.total_area_hectares || '',
+      'Created At': b.created_at ? new Date(b.created_at).toLocaleDateString() : '',
+      'Crop Count': b.crop_count || 0,
+      'Work Logs': b.work_log_count || 0,
+    }));
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `blocks_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [{ wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Blocks');
+    XLSX.writeFile(wb, `blocks_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   if (loading) {

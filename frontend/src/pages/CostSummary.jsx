@@ -1,47 +1,53 @@
 import { useState, useEffect } from 'react';
 import { analyticsAPI } from '../lib/api';
-import { DollarSign, TrendingUp, Calendar } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { DollarSign, TrendingUp, Calendar, ChevronDown, ChevronRight, X } from 'lucide-react';
 
 export default function CostSummary() {
-  const [costData, setCostData] = useState(null);
+  const [breakdown, setBreakdown] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState('monthly');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-  const currentYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: 5 }, (_, i) => currentYear - i);
+  const [period, setPeriod] = useState('daily');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedWorkType, setSelectedWorkType] = useState(null);
+  const [selectedMaterialCat, setSelectedMaterialCat] = useState(null);
+  const [selectedMaterialSubCat, setSelectedMaterialSubCat] = useState(null);
 
   useEffect(() => {
     loadData();
-  }, [period, selectedYear]);
+  }, [period]);
 
-  const loadData = async () => {
+  const loadData = async (manualFrom = null, manualTo = null) => {
     try {
+      setLoading(true);
       const today = new Date();
-      let dateFrom;
+      let from, to;
       
-      if (period === 'daily') {
-        dateFrom = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      if (manualFrom && manualTo) {
+        from = manualFrom;
+        to = manualTo;
+      } else if (period === 'daily') {
+        from = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        to = today.toISOString().split('T')[0];
       } else if (period === 'weekly') {
-        dateFrom = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        from = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        to = today.toISOString().split('T')[0];
       } else if (period === 'monthly') {
-        dateFrom = `${selectedYear}-01-01`;
-        const dateTo = `${selectedYear}-12-31`;
-        const res = await analyticsAPI.costSummary({ period: 'monthly', date_from: dateFrom, date_to: dateTo });
-        setCostData(res.data || { data: [] });
-        setLoading(false);
-        return;
+        from = `${today.getFullYear()}-01-01`;
+        to = `${today.getFullYear()}-12-31`;
       } else {
-        dateFrom = new Date(today.getFullYear() - 2, 0, 1).toISOString().split('T')[0];
+        from = `${today.getFullYear() - 2}-01-01`;
+        to = `${today.getFullYear()}-12-31`;
       }
       
-      const dateTo = `${selectedYear}-12-31`;
-      const res = await analyticsAPI.costSummary({ period, date_from: dateFrom, date_to: dateTo });
-      setCostData(res.data || { data: [] });
+      const res = await analyticsAPI.costBreakdown({ date_from: from, date_to: to });
+      console.log('API Response:', res.data);
+      setBreakdown(res.data);
+      setDateFrom(from);
+      setDateTo(to);
     } catch (error) {
       console.error('Failed to load cost data:', error);
-      setCostData({ data: [] });
+      setBreakdown({ categories: {}, materials: {} });
     } finally {
       setLoading(false);
     }
@@ -55,22 +61,48 @@ export default function CostSummary() {
     );
   }
 
-  const chartData = costData?.data || [];
-  const totalCost = chartData.reduce((a, b) => a + (b.total_cost || 0), 0);
-  const totalLabour = chartData.reduce((a, b) => a + (b.total_labour || 0), 0);
+  const categories = breakdown?.categories || {};
+  const materials = breakdown?.materials || {};
+  
+  const totalLabourCost = Object.values(categories).reduce((sum, cat) => sum + (cat.cost || 0), 0);
+  const totalLabour = Object.values(categories).reduce((sum, cat) => sum + (cat.labour || 0), 0);
+
+  const handleCategoryClick = (cat) => {
+    setSelectedCategory(cat === selectedCategory ? null : cat);
+    setSelectedWorkType(null);
+  };
+
+  const handleWorkTypeClick = (wt) => {
+    setSelectedWorkType(wt === selectedWorkType ? null : wt);
+  };
+
+  const handleMaterialCatClick = (cat) => {
+    setSelectedMaterialCat(cat === selectedMaterialCat ? null : cat);
+    setSelectedMaterialSubCat(null);
+  };
+
+  const handleMaterialSubCatClick = (subCat) => {
+    setSelectedMaterialSubCat(subCat === selectedMaterialSubCat ? null : subCat);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Cost Summary</h1>
         <div className="flex items-center gap-4">
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="input w-32"
-          >
-            {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => loadData(e.target.value, dateTo)}
+            className="input w-40"
+          />
+          <span className="text-gray-500">to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => loadData(dateFrom, e.target.value)}
+            className="input w-40"
+          />
           <div className="flex gap-2">
             {['daily', 'weekly', 'monthly', 'yearly'].map(p => (
               <button
@@ -92,8 +124,8 @@ export default function CostSummary() {
               <DollarSign className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Cost</p>
-              <p className="text-2xl font-bold">₹{totalCost.toLocaleString()}</p>
+              <p className="text-sm text-gray-500">Total Labour Cost</p>
+              <p className="text-2xl font-bold">₹{totalLabourCost.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -114,8 +146,8 @@ export default function CostSummary() {
               <Calendar className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Periods</p>
-              <p className="text-2xl font-bold">{chartData.length}</p>
+              <p className="text-sm text-gray-500">Categories</p>
+              <p className="text-2xl font-bold">{Object.keys(categories).length}</p>
             </div>
           </div>
         </div>
@@ -123,78 +155,141 @@ export default function CostSummary() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Cost Over Time</h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey={period === 'daily' ? 'date' : period === 'weekly' ? 'week_start' : period === 'monthly' ? 'month' : 'year'}
-                  tick={{ fontSize: 10 }}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
-                <Line type="monotone" dataKey="total_cost" stroke="#22c55e" strokeWidth={2} name="Cost (₹)" />
-              </LineChart>
-            </ResponsiveContainer>
+          <h2 className="text-lg font-semibold mb-4">Labour Cost by Category</h2>
+          <div className="space-y-2">
+            {Object.entries(categories).length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No labour cost data</p>
+            ) : (
+              Object.entries(categories).map(([cat, data]) => (
+                <div key={cat}>
+                  <div 
+                    onClick={() => handleCategoryClick(cat)}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                  >
+                    <div className="flex items-center gap-2">
+                      {selectedCategory === cat ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                      <span className="font-medium">{cat}</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="font-bold">₹{data.cost?.toLocaleString() || 0}</span>
+                      <span className="text-gray-500 text-sm ml-2">({data.labour} days)</span>
+                    </div>
+                  </div>
+                  
+                  {selectedCategory === cat && (
+                    <div className="ml-6 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
+                      {data.work_types?.map((wt) => (
+                        <div key={wt.name}>
+                          <div 
+                            onClick={() => handleWorkTypeClick(wt.name)}
+                            className="flex items-center justify-between p-2 bg-white rounded cursor-pointer hover:bg-gray-50"
+                          >
+                            <div className="flex items-center gap-2">
+                              {selectedWorkType === wt.name ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                              <span className="text-sm">{wt.name}</span>
+                            </div>
+                            <span className="text-sm font-medium">₹{wt.cost?.toLocaleString() || 0}</span>
+                          </div>
+                          
+                          {selectedWorkType === wt.name && wt.logs && (
+                            <div className="ml-6 mt-1 space-y-1 border-l border-gray-100 pl-2">
+                              {wt.logs.map((log, idx) => (
+                                <div key={idx} className="flex justify-between p-1 text-xs bg-gray-50 rounded">
+                                  <span>{log.date} {log.block ? `(${log.block})` : ''}</span>
+                                  <span>₹{log.cost} ({log.labour} lab)</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         <div className="card">
-          <h2 className="text-lg font-semibold mb-4">Labour Days Over Time</h2>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey={period === 'daily' ? 'date' : period === 'weekly' ? 'week_start' : period === 'monthly' ? 'month' : 'year'}
-                  tick={{ fontSize: 10 }}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Bar dataKey="total_labour" fill="#3b82f6" name="Labour Days" />
-              </BarChart>
-            </ResponsiveContainer>
+          <h2 className="text-lg font-semibold mb-4">Material Cost</h2>
+          <div className="space-y-2">
+            {Object.keys(materials).length === 0 ? (
+              <p className="text-gray-500 text-center py-4">No material cost data</p>
+            ) : (
+              Object.entries(materials).map(([cat, subCats]) => {
+                const totalIn = Object.values(subCats).reduce((s, sc) => s + (sc.in_cost || 0), 0);
+                const totalOut = Object.values(subCats).reduce((s, sc) => s + (sc.out_cost || 0), 0);
+                const netChange = totalIn - totalOut;
+                return (
+                  <div key={cat}>
+                    <button 
+                      type="button"
+                      onClick={() => handleMaterialCatClick(cat)}
+                      className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+                    >
+                      <div className="flex items-center gap-2">
+                        {selectedMaterialCat === cat ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        <span className="font-medium">{cat}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 text-sm">+₹{totalIn.toLocaleString()}</span>
+                        <span className="text-red-600 text-sm ml-2">-₹{totalOut.toLocaleString()}</span>
+                        <span className={`text-sm ml-2 font-medium ${netChange >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                          ({netChange >= 0 ? '+' : ''}₹{netChange.toLocaleString()})
+                        </span>
+                      </div>
+                    </button>
+                    
+                    {selectedMaterialCat === cat && (
+                      <div className="ml-6 mt-2 space-y-1 border-l-2 border-gray-200 pl-4">
+                        {Object.entries(subCats).map(([subCat, data]) => {
+                          const subNet = (data.in_cost || 0) - (data.out_cost || 0);
+                          return (
+                          <div key={subCat}>
+                            <button 
+                              type="button"
+                              onClick={() => handleMaterialSubCatClick(subCat)}
+                              className="w-full flex items-center justify-between p-2 bg-white rounded cursor-pointer hover:bg-gray-50"
+                            >
+                              <div className="flex items-center gap-2">
+                                {selectedMaterialSubCat === subCat ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                <span className="text-sm">{subCat}</span>
+                              </div>
+                              <div className="text-right text-sm">
+                                <span className="text-green-600">+₹{data.in_cost?.toLocaleString() || 0}</span>
+                                <span className="text-red-600 ml-2">-₹{data.out_cost?.toLocaleString() || 0}</span>
+                                <span className={`ml-2 ${subNet >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                                  ({subNet >= 0 ? '+' : ''}₹{subNet.toLocaleString()})
+                                </span>
+                              </div>
+                            </button>
+                            
+                            {selectedMaterialSubCat === subCat && data.items && (
+                              <div className="ml-6 mt-1 space-y-1 border-l border-gray-100 pl-2">
+                                {Object.entries(data.items).map(([itemName, itemData]) => (
+                                  <div key={itemName} className="flex justify-between p-1 text-xs bg-gray-50 rounded">
+                                    <span>{itemName}</span>
+                                    <div>
+                                      <span className="text-green-600">+{itemData.in_qty} {itemData.unit}</span>
+                                      <span className="text-gray-500">(₹{itemData.in_cost?.toLocaleString() || 0})</span>
+                                      <span className="text-red-600 ml-2">-{itemData.out_qty} {itemData.unit}</span>
+                                      <span className="text-gray-500">(₹{itemData.out_cost?.toLocaleString() || 0})</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2 className="text-lg font-semibold mb-4">Period Breakdown</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Period</th>
-                <th className="text-right p-2">Work Items</th>
-                <th className="text-right p-2">Labour Days</th>
-                <th className="text-right p-2">Cost (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chartData.map((d, i) => (
-                <tr key={i} className="border-b">
-                  <td className="p-2">
-                    {period === 'daily' ? d.date : 
-                     period === 'weekly' ? `${d.week_start} to ${d.week_end}` :
-                     period === 'monthly' ? `${d.year}-${String(d.month).padStart(2, '0')}` :
-                     d.year}
-                  </td>
-                  <td className="p-2 text-right">{d.work_items}</td>
-                  <td className="p-2 text-right">{d.total_labour}</td>
-                  <td className="p-2 text-right font-medium">₹{d.total_cost?.toLocaleString() || 0}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="font-bold">
-                <td className="p-2">Total</td>
-                <td className="p-2 text-right">{chartData.reduce((a, b) => a + (b.work_items || 0), 0)}</td>
-                <td className="p-2 text-right">{chartData.reduce((a, b) => a + (b.total_labour || 0), 0)}</td>
-                <td className="p-2 text-right">₹{totalCost.toLocaleString()}</td>
-              </tr>
-            </tfoot>
-          </table>
         </div>
       </div>
     </div>

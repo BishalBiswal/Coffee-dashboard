@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
+import { workTypesAPI, blocksAPI, cropsAPI } from '../../lib/api';
 import { Save, CloudOff, RefreshCw, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -10,9 +11,11 @@ export default function PWAWorkForm() {
   const [blocks, setBlocks] = useState([]);
   const [crops, setCrops] = useState([]);
   const [workers, setWorkers] = useState([]);
+  const [workTypes, setWorkTypes] = useState([]);
   const [selectedWorkers, setSelectedWorkers] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     defaultValues: {
       log_date: new Date().toISOString().split('T')[0],
       male_labour_count: 0,
@@ -26,9 +29,35 @@ export default function PWAWorkForm() {
 
   const loadOptions = async () => {
     try {
-      const storedBlocks = localStorage.getItem('pwa_blocks');
-      const storedCrops = localStorage.getItem('pwa_crops');
+      let storedBlocks = localStorage.getItem('pwa_blocks');
+      let storedCrops = localStorage.getItem('pwa_crops');
       const storedWorkers = localStorage.getItem('pwa_workers');
+      let storedWorkTypes = localStorage.getItem('pwa_work_types');
+      
+      // Fetch from API if not in localStorage
+      if (!storedBlocks || !storedCrops || !storedWorkTypes) {
+        try {
+          const [blocksRes, cropsRes, wtRes] = await Promise.all([
+            workTypesAPI.list().catch(() => ({ data: [] })),
+          ]);
+          
+          const blocksData = blocksRes.data.results || blocksRes.data;
+          const cropsData = cropsRes.data.results || cropsRes.data;
+          const wtData = wtRes.data.results || wtRes.data;
+          
+          if (blocksData.length) localStorage.setItem('pwa_blocks', JSON.stringify(blocksData));
+          if (cropsData.length) localStorage.setItem('pwa_crops', JSON.stringify(cropsData));
+          if (wtData.length) localStorage.setItem('pwa_work_types', JSON.stringify(wtData));
+          
+          setBlocks(blocksData);
+          setCrops(cropsData);
+          setWorkTypes(wtData);
+          if (storedWorkers) setWorkers(JSON.parse(storedWorkers));
+          return;
+        } catch (apiError) {
+          console.error('API fetch failed, using cached:', apiError);
+        }
+      }
       
       if (storedBlocks && storedCrops) {
         setBlocks(JSON.parse(storedBlocks));
@@ -36,6 +65,9 @@ export default function PWAWorkForm() {
       }
       if (storedWorkers) {
         setWorkers(JSON.parse(storedWorkers));
+      }
+      if (storedWorkTypes) {
+        setWorkTypes(JSON.parse(storedWorkTypes));
       }
     } catch (error) {
       console.error('Failed to load options:', error);
@@ -96,6 +128,7 @@ export default function PWAWorkForm() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input
               type="date"
+              max={new Date().toISOString().split('T')[0]}
               {...register('log_date', { required: 'Required' })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
@@ -118,16 +151,33 @@ export default function PWAWorkForm() {
           </div>
 
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select 
+              {...register('category', { required: 'Required' })} 
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setValue('work_type', '');
+              }}
+            >
+              <option value="">Select</option>
+              <option value="Nursery">Nursery</option>
+              <option value="Field">Field</option>
+              <option value="Tree">Tree Management</option>
+              <option value="Processing">Processing</option>
+              <option value="Misc">Miscellaneous</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Work Type</label>
             <select {...register('work_type', { required: 'Required' })} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
               <option value="">Select</option>
-              <option value="1">Weeding</option>
-              <option value="2">Planting</option>
-              <option value="3">Harvesting</option>
-              <option value="4">Irrigation</option>
-              <option value="5">Spraying</option>
-              <option value="6">Mulching</option>
-              <option value="7">Other</option>
+              {workTypes
+                .filter(wt => wt.category === selectedCategory)
+                .map(wt => (
+                  <option key={wt.id} value={wt.id}>{wt.name}</option>
+                ))}
             </select>
           </div>
 

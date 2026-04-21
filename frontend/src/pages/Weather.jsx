@@ -78,7 +78,7 @@ export default function Weather() {
         <div className="card">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <input type="date" value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="input" required />
+              <input type="date" max={new Date().toISOString().split('T')[0]} value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="input" required />
               <input type="number" step="0.1" placeholder="Rainfall (mm)" value={formData.rainfall_mm} onChange={(e) => setFormData({...formData, rainfall_mm: e.target.value})} className="input" />
               <input type="number" step="0.1" placeholder="Max Temp" value={formData.temperature_max} onChange={(e) => setFormData({...formData, temperature_max: e.target.value})} className="input" />
               <input type="number" step="0.1" placeholder="Min Temp" value={formData.temperature_min} onChange={(e) => setFormData({...formData, temperature_min: e.target.value})} className="input" />

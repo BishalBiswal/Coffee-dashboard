@@ -395,15 +395,15 @@ class DailyWorkLogViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def assign_workers(self, request, pk=None):
         log = self.get_object()
-        worker_ids = request.data.get('worker_ids', [])
+        workers_data = request.data.get('workers', [])
         
         log.workers.clear()
         from .models import WorkLogAttendance
-        for worker_id in worker_ids:
+        for w in workers_data:
             WorkLogAttendance.objects.create(
                 work_log=log,
-                worker_id=worker_id,
-                hours_worked=8,
+                worker_id=w.get('worker_id'),
+                hours_worked=w.get('hours_worked', 8),
             )
         
         serializer = self.get_serializer(log)

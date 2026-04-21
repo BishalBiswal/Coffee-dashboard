@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import dashboard_summary, work_trend, block_summary, crop_summary, cost_summary
+from .views import dashboard_summary, work_trend, block_summary, crop_summary, cost_summary, cost_breakdown
 
 urlpatterns = [
     path('dashboard/', dashboard_summary, name='dashboard_summary'),
@@ -7,4 +7,5 @@ urlpatterns = [
     path('block-summary/', block_summary, name='block_summary'),
     path('crop-summary/', crop_summary, name='crop_summary'),
     path('cost-summary/', cost_summary, name='cost_summary'),
+    path('cost-breakdown/', cost_breakdown, name='cost_breakdown'),
 ]

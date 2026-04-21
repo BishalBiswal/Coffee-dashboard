@@ -113,6 +113,7 @@ export default function Attendance() {
           <Calendar className="w-5 h-5 text-gray-500" />
           <input
             type="date"
+            max={new Date().toISOString().split('T')[0]}
             value={date}
             onChange={(e) => setDate(e.target.value)}
             className="input w-40"

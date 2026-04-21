@@ -106,16 +106,17 @@ class WeatherRecordSerializer(serializers.ModelSerializer):
 class InventoryItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = InventoryItem
-        fields = ['id', 'name', 'category', 'unit', 'current_stock', 'min_stock_level', 'rate_per_unit', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'category', 'sub_category', 'unit', 'current_stock', 'min_stock_level', 'rate_per_unit', 'created_at', 'updated_at']
 
 
 class InventoryTransactionSerializer(serializers.ModelSerializer):
     item_name = serializers.CharField(source='item.name', read_only=True)
+    item_unit = serializers.CharField(source='item.unit', read_only=True)
     block_name = serializers.CharField(source='block.name', read_only=True)
 
     class Meta:
         model = InventoryTransaction
-        fields = ['id', 'date', 'item', 'item_name', 'transaction_type', 'quantity', 'block', 'block_name', 'notes', 'created_at']
+        fields = ['id', 'date', 'item', 'item_name', 'item_unit', 'transaction_type', 'quantity', 'block', 'block_name', 'notes', 'created_at']
 
 
 class DailyAttendanceSerializer(serializers.ModelSerializer):

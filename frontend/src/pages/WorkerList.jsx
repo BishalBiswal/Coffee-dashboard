@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { workersAPI } from '../lib/api';
 import { Link } from 'react-router-dom';
 import { Users, Search, Download, Edit2, Trash2, X, Check, Plus, Phone, MapPin, Calendar } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function WorkerList() {
   const [workers, setWorkers] = useState([]);
@@ -85,25 +86,27 @@ export default function WorkerList() {
   };
 
   const handleExport = () => {
-    const csvContent = [
-      ['Name', 'Gender', 'Village', 'Phone', 'Daily Rate', 'Employment Type', 'Status'].join(','),
-      ...workers.map(w => [
-        w.name,
-        w.gender,
-        (w.village || '').replace(/,/g, ';'),
-        w.phone_number || '',
-        w.daily_rate_rs,
-        w.employment_type,
-        w.status
-      ].join(','))
-    ].join('\n');
+    const data = workers.map(w => ({
+      Name: w.name,
+      Gender: w.gender,
+      Village: w.village || '',
+      'Phone Number': w.phone_number || '',
+      'Daily Rate': w.daily_rate_rs,
+      'Employment Type': w.employment_type,
+      Status: w.status,
+      'Aadhaar': w.aadhaar_number || '',
+      'Created': w.created_at ? new Date(w.created_at).toLocaleDateString() : '',
+    }));
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `workers_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 8 }, { wch: 15 }, { wch: 12 }, { wch: 10 },
+      { wch: 15 }, { wch: 10 }, { wch: 14 }, { wch: 12 }
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Workers');
+    XLSX.writeFile(wb, `workers_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const genderColors = {
