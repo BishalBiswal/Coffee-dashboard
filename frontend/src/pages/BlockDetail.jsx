@@ -50,18 +50,18 @@ export default function BlockDetail() {
 
       {/* Block Header */}
       <div className="card">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-primary-100 rounded-lg">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3 bg-primary-100 rounded-lg shrink-0">
               <Trees className="w-8 h-8 text-primary-600" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">Block {block?.name}</h1>
-              <p className="text-gray-500">{block?.location || 'No location'}</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold truncate">Block {block?.name}</h1>
+              <p className="text-gray-500 truncate">{block?.location || 'No location'}</p>
             </div>
           </div>
           {block?.total_area_hectares && (
-            <div className="text-right">
+            <div className="text-right shrink-0">
               <p className="text-sm text-gray-500">Total Area</p>
               <p className="text-lg font-semibold">{block.total_area_hectares} ha</p>
             </div>

@@ -200,17 +200,17 @@ export default function WorkLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Work Logs</h1>
           <p className="text-gray-500">Daily work entries - {logs.length} records</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export XLSX
+          <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2 whitespace-nowrap">
+            <Download className="w-4 h-4 shrink-0" /> Export XLSX
           </button>
-          <Link to="/work-logs/new" className="btn btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> New Entry
+          <Link to="/work-logs/new" className="btn btn-primary flex items-center gap-2 whitespace-nowrap">
+            <Plus className="w-4 h-4 shrink-0" /> New Entry
           </Link>
         </div>
       </div>
@@ -389,7 +389,7 @@ export default function WorkLogs() {
               <div>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold">{log.work_type_name}</h3>
                       <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[log.status]}`}>
                         {log.status}
@@ -403,21 +403,21 @@ export default function WorkLogs() {
                       <p className="text-sm mt-1">{log.work_detail}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => handleEdit(log)} className="p-1 text-gray-400 hover:text-primary-600">
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => handleEdit(log)} className="p-1 text-gray-400 hover:text-primary-600 shrink-0">
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => handleDelete(log.id)} className="p-1 text-gray-400 hover:text-red-600">
+                    <button onClick={() => handleDelete(log.id)} className="p-1 text-gray-400 hover:text-red-600 shrink-0">
                       <Trash2 className="w-4 h-4" />
                     </button>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-sm text-gray-500">
-                        <Calendar className="w-4 h-4" />
+                    <div className="text-right ml-2">
+                      <div className="flex items-center gap-1 text-sm text-gray-500 whitespace-nowrap">
+                        <Calendar className="w-4 h-4 shrink-0" />
                         {format(new Date(log.log_date), 'dd MMM yyyy')}
                       </div>
                       <div className="flex items-center gap-1 text-sm mt-1">
-                        <Users className="w-4 h-4 text-gray-400" />
-                        <span>{log.total_labour_count}</span>
+                        <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="whitespace-nowrap">{log.total_labour_count}</span>
                       </div>
                     </div>
                   </div>

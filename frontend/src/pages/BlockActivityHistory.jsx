@@ -71,25 +71,25 @@ export default function BlockActivityHistory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link to={`/blocks/${id}`} className="p-2 hover:bg-gray-100 rounded-lg">
+          <Link to={`/blocks/${id}`} className="p-2 hover:bg-gray-100 rounded-lg shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Block {block?.name}</h1>
-            <p className="text-gray-500">{block?.location}</p>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900 truncate">Block {block?.name}</h1>
+            <p className="text-gray-500 truncate">{block?.location}</p>
           </div>
         </div>
-        <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2">
-          <Download className="w-4 h-4" /> Export XLSX
+        <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2 whitespace-nowrap shrink-0">
+          <Download className="w-4 h-4 shrink-0" /> Export XLSX
         </button>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-500" />
+            <Filter className="w-4 h-4 text-gray-500 shrink-0" />
             <span className="text-sm font-medium">Filters:</span>
           </div>
           
@@ -97,7 +97,7 @@ export default function BlockActivityHistory() {
             type="date"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
-            className="input w-auto"
+            className="input flex-1 min-w-[140px] sm:min-w-0 sm:w-auto"
             placeholder="From"
           />
 
@@ -105,14 +105,14 @@ export default function BlockActivityHistory() {
             type="date"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
-            className="input w-auto"
+            className="input flex-1 min-w-[140px] sm:min-w-0 sm:w-auto"
             placeholder="To"
           />
 
           {(dateFrom || dateTo) && (
             <button
               onClick={() => { setDateFrom(''); setDateTo(''); }}
-              className="text-sm text-red-600 hover:underline"
+              className="text-sm text-red-600 hover:underline shrink-0"
             >
               Clear
             </button>
@@ -120,7 +120,7 @@ export default function BlockActivityHistory() {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <p className="text-2xl font-bold text-gray-900">{logs.length}</p>
           <p className="text-sm text-gray-500">Total Activities</p>

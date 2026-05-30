@@ -356,11 +356,11 @@ export default function WorkLogForm() {
             {selectedWorkType && selectedCategory && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Materials Used</label>
-                <div className="flex gap-2 mb-2">
+                <div className="flex flex-wrap gap-2 mb-2">
                   <select 
                     value={selectedMaterial}
                     onChange={(e) => setSelectedMaterial(e.target.value)}
-                    className="input flex-1"
+                    className="input flex-1 min-w-[140px]"
                   >
                     <option value="">Select Material</option>
                     {filteredMaterials.map(m => (
@@ -384,7 +384,7 @@ export default function WorkLogForm() {
                   <button 
                     type="button"
                     onClick={addMaterial}
-                    className="btn btn-primary"
+                    className="btn btn-primary shrink-0"
                   >
                     <Plus className="w-4 h-4" />
                   </button>

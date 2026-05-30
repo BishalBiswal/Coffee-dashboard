@@ -106,20 +106,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="p-2 hover:bg-gray-100 rounded-lg">
+          <button onClick={() => navigate('/')} className="p-2 hover:bg-gray-100 rounded-lg shrink-0">
             <Home className="w-6 h-6 text-primary-600" />
           </button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-500">{dashboardData?.date}</p>
+            <p className="text-gray-500 truncate">{dashboardData?.date}</p>
           </div>
         </div>
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          className="input w-48"
+          className="input w-full sm:w-48"
         >
           <option value="30">Last 30 Days</option>
           <option value="90">Last 90 Days</option>

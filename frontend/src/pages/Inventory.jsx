@@ -154,18 +154,18 @@ export default function Inventory() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
         <div className="flex gap-2">
-          <button onClick={() => { setShowItemForm(!showItemForm); setShowTransForm(false); }} className="btn btn-primary">Add Item</button>
-          <button onClick={() => { setShowTransForm(!showTransForm); setShowItemForm(false); }} className="btn btn-secondary">Add/Remove Stock</button>
+          <button onClick={() => { setShowItemForm(!showItemForm); setShowTransForm(false); }} className="btn btn-primary whitespace-nowrap">Add Item</button>
+          <button onClick={() => { setShowTransForm(!showTransForm); setShowItemForm(false); }} className="btn btn-secondary whitespace-nowrap">Add/Remove Stock</button>
         </div>
       </div>
 
-      <div className="flex gap-4 border-b">
-        <button onClick={() => setActiveTab('stock')} className={`pb-2 px-1 ${activeTab === 'stock' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Stock by Category</button>
-        <button onClick={() => setActiveTab('items')} className={`pb-2 px-1 ${activeTab === 'items' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Items</button>
-        <button onClick={() => setActiveTab('transactions')} className={`pb-2 px-1 ${activeTab === 'transactions' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Transactions</button>
+      <div className="flex gap-4 border-b overflow-x-auto">
+        <button onClick={() => setActiveTab('stock')} className={`pb-2 px-1 whitespace-nowrap ${activeTab === 'stock' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Stock by Category</button>
+        <button onClick={() => setActiveTab('items')} className={`pb-2 px-1 whitespace-nowrap ${activeTab === 'items' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Items</button>
+        <button onClick={() => setActiveTab('transactions')} className={`pb-2 px-1 whitespace-nowrap ${activeTab === 'transactions' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Transactions</button>
       </div>
 
       {showItemForm && (
@@ -222,72 +222,71 @@ export default function Inventory() {
         </div>
       )}
 
-       {activeTab === 'stock' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map(cat => {
-              const catItems = items.filter(i => i.category === cat);
-              return (
-                <button 
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedStockCategory(cat === selectedStockCategory ? null : cat)}
-                  className="card text-left hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg mb-2">{cat}</h3>
-                    {selectedStockCategory === cat ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </div>
-                  <p className="text-2xl font-bold text-primary-600">{catItems.length} items</p>
-                  <p className="text-sm text-gray-500">{catItems.reduce((a, b) => a + Number(b.current_stock), 0)} total stock</p>
-                </button>
-              );
-            })}
-          </div>
-          
-          {selectedStockCategory && (
-            <div className="card">
-              <h3 className="font-semibold text-lg mb-4">{selectedStockCategory} - By Sub Category</h3>
-              {Object.entries(
-                items.filter(i => i.category === selectedStockCategory).reduce((acc, item) => {
-                  const subCat = item.sub_category || 'Other';
-                  if (!acc[subCat]) acc[subCat] = [];
-                  acc[subCat].push(item);
-                  return acc;
-                }, {})
-              ).map(([subCat, subItems]) => (
-                <div key={subCat} className="border-b last:border-b-0 py-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">{subCat}</span>
-                    <span className="text-sm text-gray-500">{subItems.length} items</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {subItems.map(item => (
-                      <div key={item.id} className="bg-gray-50 p-2 rounded text-sm flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-gray-500">{item.current_stock} {item.unit}</div>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => setQuickAddItem(item)}
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        {activeTab === 'stock' && (
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+           {categories.map(cat => {
+             const catItems = items.filter(i => i.category === cat);
+             const isOpen = selectedStockCategory === cat;
+             return (
+               <div key={cat} className="card p-0 overflow-hidden">
+                 <button 
+                   type="button"
+                   onClick={() => setSelectedStockCategory(isOpen ? null : cat)}
+                   className="w-full text-left p-4 hover:bg-gray-50 transition-colors"
+                 >
+                   <div className="flex items-center justify-between">
+                     <h3 className="font-semibold text-lg mb-2">{cat}</h3>
+                     {isOpen ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+                   </div>
+                   <p className="text-2xl font-bold text-primary-600">{catItems.length} items</p>
+                   <p className="text-sm text-gray-500">{catItems.reduce((a, b) => a + Number(b.current_stock), 0)} total stock</p>
+                 </button>
+                 
+                 {isOpen && (
+                   <div className="border-t border-gray-100 px-4 py-3 space-y-3">
+                     {Object.entries(
+                       catItems.reduce((acc, item) => {
+                         const subCat = item.sub_category || 'Other';
+                         if (!acc[subCat]) acc[subCat] = [];
+                         acc[subCat].push(item);
+                         return acc;
+                       }, {})
+                     ).map(([subCat, subItems]) => (
+                       <div key={subCat}>
+                         <div className="flex justify-between items-center mb-2">
+                           <span className="font-medium text-sm">{subCat}</span>
+                           <span className="text-xs text-gray-500">{subItems.length} items</span>
+                         </div>
+                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                           {subItems.map(item => (
+                             <div key={item.id} className="bg-gray-50 p-2 rounded text-sm flex justify-between items-start gap-1">
+                               <div className="min-w-0">
+                                 <div className="font-medium truncate">{item.name}</div>
+                                 <div className="text-gray-500">{item.current_stock} {item.unit}</div>
+                               </div>
+                               <button 
+                                 type="button"
+                                 onClick={() => setQuickAddItem(item)}
+                                 className="text-green-600 hover:text-green-800 shrink-0"
+                               >
+                                 <Plus className="w-4 h-4" />
+                               </button>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+             );
+           })}
+         </div>
+       )}
       
       {activeTab === 'items' && (
         <div className="space-y-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
@@ -301,7 +300,7 @@ export default function Inventory() {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="input w-48"
+              className="input w-full sm:w-48"
             >
               <option value="">All Categories</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -401,8 +400,8 @@ export default function Inventory() {
      
 
       {quickAddItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold text-lg">Add Stock</h3>
               <button onClick={() => setQuickAddItem(null)} className="text-gray-500 hover:text-gray-700">

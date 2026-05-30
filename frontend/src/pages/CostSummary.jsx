@@ -87,28 +87,28 @@ export default function CostSummary() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Cost Summary</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             type="date"
             value={dateFrom}
             onChange={(e) => loadData(e.target.value, dateTo)}
-            className="input w-40"
+            className="input w-full sm:w-40"
           />
-          <span className="text-gray-500">to</span>
+          <span className="text-gray-500 hidden sm:inline">to</span>
           <input
             type="date"
             value={dateTo}
             onChange={(e) => loadData(dateFrom, e.target.value)}
-            className="input w-40"
+            className="input w-full sm:w-40"
           />
           <div className="flex gap-2">
             {['daily', 'weekly', 'monthly', 'yearly'].map(p => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded ${period === p ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+                className={`px-3 py-1 rounded text-sm ${period === p ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700'}`}
               >
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
@@ -268,13 +268,13 @@ export default function CostSummary() {
                             {selectedMaterialSubCat === subCat && data.items && (
                               <div className="ml-6 mt-1 space-y-1 border-l border-gray-100 pl-2">
                                 {Object.entries(data.items).map(([itemName, itemData]) => (
-                                  <div key={itemName} className="flex justify-between p-1 text-xs bg-gray-50 rounded">
-                                    <span>{itemName}</span>
-                                    <div>
-                                      <span className="text-green-600">+{itemData.in_qty} {itemData.unit}</span>
-                                      <span className="text-gray-500">(₹{itemData.in_cost?.toLocaleString() || 0})</span>
-                                      <span className="text-red-600 ml-2">-{itemData.out_qty} {itemData.unit}</span>
-                                      <span className="text-gray-500">(₹{itemData.out_cost?.toLocaleString() || 0})</span>
+                                  <div key={itemName} className="flex flex-col sm:flex-row sm:justify-between gap-1 p-1 text-xs bg-gray-50 rounded">
+                                    <span className="font-medium truncate">{itemName}</span>
+                                    <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                                      <span className="text-green-600 whitespace-nowrap">+{itemData.in_qty} {itemData.unit}</span>
+                                      <span className="text-gray-500 whitespace-nowrap">(₹{itemData.in_cost?.toLocaleString() || 0})</span>
+                                      <span className="text-red-600 whitespace-nowrap">-{itemData.out_qty} {itemData.unit}</span>
+                                      <span className="text-gray-500 whitespace-nowrap">(₹{itemData.out_cost?.toLocaleString() || 0})</span>
                                     </div>
                                   </div>
                                 ))}

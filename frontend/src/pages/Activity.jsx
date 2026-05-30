@@ -195,21 +195,21 @@ export default function Activity() {
                 <div className="space-y-3">
                   {selectedWorkType.logs.map((log) => (
                     <div key={log.id} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-4 text-sm">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
                         <div className="flex items-center gap-1 text-gray-600">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-4 h-4 shrink-0" />
                           {log.log_date ? format(new Date(log.log_date), 'dd MMM yyyy') : '-'}
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-4 h-4 shrink-0" />
                           {log.block_name || '-'}
                         </div>
                         <div className="flex items-center gap-1 text-gray-600">
-                          <Sprout className="w-4 h-4" />
+                          <Sprout className="w-4 h-4 shrink-0" />
                           {log.crop_name || '-'}
                         </div>
                       </div>
-                      <div className="mt-2 flex items-center gap-4">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span className="text-blue-600">Male: {log.male_labour_count || 0}</span>
                         <span className="text-pink-600">Female: {log.female_labour_count || 0}</span>
                         <span className="text-gray-500">{log.hours_worked || 8} hrs</span>

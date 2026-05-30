@@ -85,16 +85,16 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
           <p className="text-gray-500">Detailed reports and trends</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
-            className="input w-40"
+            className="input w-full sm:w-40"
           >
             <option value="30">Last 30 Days</option>
             <option value="90">Last 90 Days</option>
@@ -106,15 +106,15 @@ export default function Analytics() {
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="input w-32"
+              className="input w-full sm:w-32"
             >
               {years.map(year => (
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
           )}
-          <button onClick={handleExport} className="btn btn-primary flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export Excel
+          <button onClick={handleExport} className="btn btn-primary flex items-center gap-2 whitespace-nowrap">
+            <Download className="w-4 h-4 shrink-0" /> Export Excel
           </button>
         </div>
       </div>

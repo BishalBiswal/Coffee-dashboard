@@ -125,20 +125,20 @@ export default function WorkerList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Workers</h1>
           <p className="text-gray-500">Labour force directory - {workers.length} workers</p>
         </div>
-        <div className="flex gap-2">
-          <Link to="/workers/attendance" className="btn btn-secondary flex items-center gap-2">
-            <Calendar className="w-4 h-4" /> Attendance
+        <div className="flex gap-2 flex-wrap">
+          <Link to="/workers/attendance" className="btn btn-secondary flex items-center gap-2 whitespace-nowrap">
+            <Calendar className="w-4 h-4 shrink-0" /> Attendance
           </Link>
-          <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2">
-            <Download className="w-4 h-4" /> Export
+          <button onClick={handleExport} className="btn btn-secondary flex items-center gap-2 whitespace-nowrap">
+            <Download className="w-4 h-4 shrink-0" /> Export
           </button>
-          <button onClick={() => setShowAdd(true)} className="btn btn-primary flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Add Worker
+          <button onClick={() => setShowAdd(true)} className="btn btn-primary flex items-center gap-2 whitespace-nowrap">
+            <Plus className="w-4 h-4 shrink-0" /> Add Worker
           </button>
         </div>
       </div>

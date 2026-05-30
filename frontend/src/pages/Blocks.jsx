@@ -77,7 +77,7 @@ export default function Blocks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Blocks</h1>
           <p className="text-gray-500">Click a block to view crops and work logs</p>

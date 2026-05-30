@@ -116,8 +116,8 @@ export default function Attendance() {
   return (
     <div className="space-y-4">
       {showPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl text-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center w-full max-w-sm">
             <Check className="w-12 h-12 text-green-500 mx-auto mb-2" />
             <p className="text-lg font-semibold text-gray-900">Attendance Marked!</p>
             <p className="text-gray-500">{getPresentCount()} workers present</p>
@@ -125,7 +125,7 @@ export default function Attendance() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
           <p className="text-gray-500">Mark daily attendance</p>
@@ -133,26 +133,26 @@ export default function Attendance() {
         {isSubmitted && (
           <button
             onClick={toggleEdit}
-            className="btn btn-secondary flex items-center gap-2"
+            className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4 shrink-0" />
             Edit
           </button>
         )}
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-gray-500" />
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <Calendar className="w-5 h-5 text-gray-500 shrink-0" />
           <input
             type="date"
             max={new Date().toISOString().split('T')[0]}
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="input w-40"
+            className="input w-full sm:w-40"
           />
         </div>
-        <div className="flex-1"></div>
+        <div className="flex-1 hidden sm:block"></div>
         <div className="text-right">
           <p className="text-2xl font-bold text-green-600">{getPresentCount()}</p>
           <p className="text-sm text-gray-500">present</p>
