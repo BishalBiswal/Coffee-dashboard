@@ -6,5 +6,10 @@
     "restartPolicyMaxRetries": 10,
     "healthcheckPath": "/api/",
     "healthcheckTimeout": 300
+  },
+  "build": {
+    "variables": {
+      "RAILPACK_PYTHON_VERSION": "3.13"
+    }
   }
 }
