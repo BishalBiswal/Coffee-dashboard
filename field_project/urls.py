@@ -1,8 +1,13 @@
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import path, include
 from django.views.generic import TemplateView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
+
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
 
 from apps.auth_app.views import CustomTokenObtainPairView, user_profile
 from apps.core_app.views import (
@@ -26,6 +31,7 @@ router.register(r'inventory-transactions', InventoryTransactionViewSet, basename
 router.register(r'attendance', DailyAttendanceViewSet, basename='attendance')
 
 urlpatterns = [
+    path('api/health/', health_check),
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),

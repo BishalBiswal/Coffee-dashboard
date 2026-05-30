@@ -10,7 +10,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable must be set")
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+_allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+# Include Railway-provided URL automatically
+railway_url = os.environ.get('RAILWAY_STATIC_URL')
+if railway_url:
+    _allowed.append(railway_url)
+    _allowed.append(railway_url.replace('https://', ''))
+ALLOWED_HOSTS = _allowed
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -110,7 +116,11 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = []
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STORAGES = {
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 WHITENOISE_ROOT = os.path.join(BASE_DIR, 'frontend', 'dist')
 
 # Serve frontend build in production
