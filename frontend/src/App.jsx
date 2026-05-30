@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useAuthStore } from './stores/authStore';
-import { useEffect } from 'react';
+import { useEffect, Component } from 'react';
 import Layout from './components/Layout';
 import FieldWorkerLayout from './components/FieldWorkerLayout';
 import Login from './pages/Login';
@@ -23,6 +23,41 @@ import Inventory from './pages/Inventory';
 import CostSummary from './pages/CostSummary';
 import Activity from './pages/Activity';
 import Attendance from './pages/Attendance';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center p-8">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Something went wrong</h1>
+            <p className="text-gray-600 mb-4">Please refresh the page or try again later.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function PrivateRoute({ children }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -88,10 +123,12 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Toaster position="top-right" />
-      <AppRoutes />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Toaster position="top-right" />
+        <AppRoutes />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

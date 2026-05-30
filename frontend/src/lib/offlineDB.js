@@ -3,19 +3,24 @@ import { openDB } from 'idb';
 const DB_NAME = 'field-management';
 const DB_VERSION = 1;
 
+let dbPromise = null;
+
 export async function initDB() {
-  return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      if (!db.objectStoreNames.contains('workLogs')) {
-        const store = db.createObjectStore('workLogs', { keyPath: 'client_sync_id' });
-        store.createIndex('status', 'status');
-        store.createIndex('log_date', 'log_date');
-      }
-      if (!db.objectStoreNames.contains('syncQueue')) {
-        db.createObjectStore('syncQueue', { keyPath: 'client_sync_id' });
-      }
-    },
-  });
+  if (!dbPromise) {
+    dbPromise = openDB(DB_NAME, DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('workLogs')) {
+          const store = db.createObjectStore('workLogs', { keyPath: 'client_sync_id' });
+          store.createIndex('status', 'status');
+          store.createIndex('log_date', 'log_date');
+        }
+        if (!db.objectStoreNames.contains('syncQueue')) {
+          db.createObjectStore('syncQueue', { keyPath: 'client_sync_id' });
+        }
+      },
+    });
+  }
+  return dbPromise;
 }
 
 export const offlineDB = {

@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.auth_app.views import CustomTokenObtainPairView, user_profile
 from apps.core_app.views import (
-    BlockViewSet, CropViewSet, BlockCropViewSet, 
+    BlockViewSet, CropViewSet, BlockCropViewSet,
     WorkerViewSet, WorkTypeViewSet, DailyWorkLogViewSet, SeasonViewSet,
     WeatherRecordViewSet, InventoryItemViewSet, InventoryTransactionViewSet,
     DailyAttendanceViewSet
@@ -34,3 +35,8 @@ urlpatterns = [
     path('api/analytics/', include('apps.analytics_app.urls')),
     path('api/export/', include('apps.export_app.urls')),
 ]
+
+# SPA fallback - serve index.html for non-API routes in production
+import os
+if os.environ.get('DEBUG', 'False') != 'True':
+    urlpatterns.append(path('', TemplateView.as_view(template_name='index.html')))

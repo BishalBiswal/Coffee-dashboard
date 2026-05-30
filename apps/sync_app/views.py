@@ -12,34 +12,41 @@ from apps.core_app.serializers import DailyWorkLogSerializer
 def sync_work_logs(request):
     entries = request.data.get('entries', [])
     user = request.user
-    
+
     results = {
         'success': [],
         'conflicts': [],
         'errors': [],
     }
-    
+
     for entry in entries:
         try:
             client_sync_id = entry.get('client_sync_id')
-            
+
             existing = DailyWorkLog.objects.filter(client_sync_id=client_sync_id).first()
-            
+
             if existing:
+                if existing.created_by != user:
+                    results['errors'].append({
+                        'client_sync_id': str(client_sync_id),
+                        'error': 'Unauthorized: You do not own this work log',
+                    })
+                    continue
+
                 client_timestamp = entry.get('created_at', 0)
                 server_timestamp = existing.updated_at.timestamp() * 1000
-                
+
                 if client_timestamp > 0 and client_timestamp > server_timestamp:
-                    for field in ['log_date', 'block_id', 'crop_id', 'row_number', 
+                    for field in ['log_date', 'block_id', 'crop_id', 'row_number',
                                   'work_type_id', 'work_detail', 'male_labour_count',
                                   'female_labour_count', 'notes', 'status']:
                         if field in entry:
                             setattr(existing, field, entry[field])
                     existing.updated_at = timezone.now()
                     existing.save()
-                    
+
                     _update_workers(existing, entry.get('worker_ids', []))
-                    
+
                     results['success'].append({
                         'client_sync_id': str(client_sync_id),
                         'server_id': existing.id,
@@ -66,28 +73,30 @@ def sync_work_logs(request):
                     synced_at=timezone.now(),
                     created_by=user,
                 )
-                
+
                 _update_workers(work_log, entry.get('worker_ids', []))
-                
+
                 results['success'].append({
                     'client_sync_id': str(client_sync_id),
                     'server_id': work_log.id,
                 })
-        
+
         except Exception as e:
             results['errors'].append({
                 'client_sync_id': str(entry.get('client_sync_id', 'unknown')),
                 'error': str(e),
             })
-    
+
     return Response(results, status=status.HTTP_200_OK)
 
 
 def _update_workers(work_log, worker_ids):
-    work_log.workers.clear()
-    for worker_id in worker_ids:
-        WorkLogAttendance.objects.create(
-            work_log=work_log,
-            worker_id=worker_id,
-            hours_worked=8,
-        )
+    from django.db import transaction
+    with transaction.atomic():
+        work_log.workers.clear()
+        for worker_id in worker_ids:
+            WorkLogAttendance.objects.create(
+                work_log=work_log,
+                worker_id=worker_id,
+                hours_worked=8,
+            )

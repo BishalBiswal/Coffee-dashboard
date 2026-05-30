@@ -6,7 +6,7 @@ export default function Inventory() {
   const [items, setItems] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('items');
+  const [activeTab, setActiveTab] = useState('stock');
   const [showItemForm, setShowItemForm] = useState(false);
   const [showTransForm, setShowTransForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -163,9 +163,9 @@ export default function Inventory() {
       </div>
 
       <div className="flex gap-4 border-b">
+        <button onClick={() => setActiveTab('stock')} className={`pb-2 px-1 ${activeTab === 'stock' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Stock by Category</button>
         <button onClick={() => setActiveTab('items')} className={`pb-2 px-1 ${activeTab === 'items' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Items</button>
         <button onClick={() => setActiveTab('transactions')} className={`pb-2 px-1 ${activeTab === 'transactions' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Transactions</button>
-        <button onClick={() => setActiveTab('stock')} className={`pb-2 px-1 ${activeTab === 'stock' ? 'border-b-2 border-primary-600 text-primary-600' : 'text-gray-500'}`}>Stock by Category</button>
       </div>
 
       {showItemForm && (
@@ -222,6 +222,69 @@ export default function Inventory() {
         </div>
       )}
 
+       {activeTab === 'stock' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {categories.map(cat => {
+              const catItems = items.filter(i => i.category === cat);
+              return (
+                <button 
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedStockCategory(cat === selectedStockCategory ? null : cat)}
+                  className="card text-left hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg mb-2">{cat}</h3>
+                    {selectedStockCategory === cat ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </div>
+                  <p className="text-2xl font-bold text-primary-600">{catItems.length} items</p>
+                  <p className="text-sm text-gray-500">{catItems.reduce((a, b) => a + Number(b.current_stock), 0)} total stock</p>
+                </button>
+              );
+            })}
+          </div>
+          
+          {selectedStockCategory && (
+            <div className="card">
+              <h3 className="font-semibold text-lg mb-4">{selectedStockCategory} - By Sub Category</h3>
+              {Object.entries(
+                items.filter(i => i.category === selectedStockCategory).reduce((acc, item) => {
+                  const subCat = item.sub_category || 'Other';
+                  if (!acc[subCat]) acc[subCat] = [];
+                  acc[subCat].push(item);
+                  return acc;
+                }, {})
+              ).map(([subCat, subItems]) => (
+                <div key={subCat} className="border-b last:border-b-0 py-3">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium">{subCat}</span>
+                    <span className="text-sm text-gray-500">{subItems.length} items</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {subItems.map(item => (
+                      <div key={item.id} className="bg-gray-50 p-2 rounded text-sm flex justify-between items-start">
+                        <div>
+                          <div className="font-medium">{item.name}</div>
+                          <div className="text-gray-500">{item.current_stock} {item.unit}</div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => setQuickAddItem(item)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      
       {activeTab === 'items' && (
         <div className="space-y-4">
           <div className="flex gap-4">
@@ -335,68 +398,7 @@ export default function Inventory() {
         </div>
       )}
 
-      {activeTab === 'stock' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map(cat => {
-              const catItems = items.filter(i => i.category === cat);
-              return (
-                <button 
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedStockCategory(cat === selectedStockCategory ? null : cat)}
-                  className="card text-left hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg mb-2">{cat}</h3>
-                    {selectedStockCategory === cat ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                  </div>
-                  <p className="text-2xl font-bold text-primary-600">{catItems.length} items</p>
-                  <p className="text-sm text-gray-500">{catItems.reduce((a, b) => a + Number(b.current_stock), 0)} total stock</p>
-                </button>
-              );
-            })}
-          </div>
-          
-          {selectedStockCategory && (
-            <div className="card">
-              <h3 className="font-semibold text-lg mb-4">{selectedStockCategory} - By Sub Category</h3>
-              {Object.entries(
-                items.filter(i => i.category === selectedStockCategory).reduce((acc, item) => {
-                  const subCat = item.sub_category || 'Other';
-                  if (!acc[subCat]) acc[subCat] = [];
-                  acc[subCat].push(item);
-                  return acc;
-                }, {})
-              ).map(([subCat, subItems]) => (
-                <div key={subCat} className="border-b last:border-b-0 py-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">{subCat}</span>
-                    <span className="text-sm text-gray-500">{subItems.length} items</span>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {subItems.map(item => (
-                      <div key={item.id} className="bg-gray-50 p-2 rounded text-sm flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-gray-500">{item.current_stock} {item.unit}</div>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => setQuickAddItem(item)}
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+     
 
       {quickAddItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

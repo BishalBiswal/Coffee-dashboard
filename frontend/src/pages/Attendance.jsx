@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { workersAPI, attendanceAPI } from '../lib/api';
 import { format } from 'date-fns';
-import { Users, Check, X, Save, Loader, Calendar } from 'lucide-react';
+import { Users, Check, X, Save, Loader, Calendar, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Attendance() {
+  const navigate = useNavigate();
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [attendance, setAttendance] = useState({});
   const [selectAll, setSelectAll] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -34,6 +38,7 @@ export default function Attendance() {
       });
       setAttendance(attMap);
       setSelectAll(workersData.length > 0 && workersData.every(w => attMap[w.id]));
+      setIsSubmitted(attData.length > 0);
     } catch (error) {
       console.error('Failed to load:', error);
     } finally {
@@ -78,7 +83,12 @@ export default function Attendance() {
         present: true
       });
 
-      toast.success('Attendance saved');
+      setIsSubmitted(true);
+      setShowPopup(true);
+      setTimeout(() => {
+        setShowPopup(false);
+        navigate('/');
+      }, 2000);
     } catch (error) {
       console.error('Failed to save:', error);
       toast.error('Failed to save attendance');
@@ -99,13 +109,36 @@ export default function Attendance() {
     );
   }
 
+  const toggleEdit = () => {
+    setIsSubmitted(false);
+  };
+
   return (
     <div className="space-y-4">
+      {showPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl text-center">
+            <Check className="w-12 h-12 text-green-500 mx-auto mb-2" />
+            <p className="text-lg font-semibold text-gray-900">Attendance Marked!</p>
+            <p className="text-gray-500">{getPresentCount()} workers present</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
           <p className="text-gray-500">Mark daily attendance</p>
         </div>
+        {isSubmitted && (
+          <button
+            onClick={toggleEdit}
+            className="btn btn-secondary flex items-center gap-2"
+          >
+            <Pencil className="w-4 h-4" />
+            Edit
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-4">
@@ -128,22 +161,29 @@ export default function Attendance() {
 
       <div className="card">
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              checked={selectAll}
-              onChange={toggleSelectAll}
-              className="w-5 h-5 rounded border-gray-300"
-            />
-            <span className="font-medium">Select All</span>
-          </div>
+          {isSubmitted ? (
+            <div className="flex items-center gap-2 text-green-600">
+              <Check className="w-5 h-5" />
+              <span className="font-medium">Attendance Submitted</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={toggleSelectAll}
+                className="w-5 h-5 rounded border-gray-300"
+              />
+              <span className="font-medium">Select All</span>
+            </div>
+          )}
           <button
             onClick={saveAttendance}
             disabled={saving}
             className="btn btn-primary flex items-center gap-2"
           >
             {saving ? <Loader className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save Attendance
+            {isSubmitted ? 'Update Attendance' : 'Save Attendance'}
           </button>
         </div>
 
@@ -158,7 +198,8 @@ export default function Attendance() {
                   type="checkbox"
                   checked={attendance[worker.id] || false}
                   onChange={() => toggleWorker(worker.id)}
-                  className="w-5 h-5 rounded border-gray-300"
+                  disabled={isSubmitted}
+                  className="w-5 h-5 rounded border-gray-300 disabled:opacity-50"
                 />
                 <div>
                   <p className="font-medium text-gray-900">{worker.name}</p>

@@ -2,15 +2,25 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Sum, Count, Q
+from django.utils import timezone
 from datetime import datetime, timedelta, date
 from calendar import monthrange
 from apps.core_app.models import DailyWorkLog, Block, Crop, WorkLogAttendance, WorkType, InventoryTransaction
 
 
+def parse_date(param, default):
+    if not param:
+        return default
+    try:
+        return datetime.strptime(param, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return default
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def dashboard_summary(request):
-    today = datetime.now().date()
+    today = timezone.now().date()
     
     todays_logs = DailyWorkLog.objects.filter(log_date=today)
     
@@ -40,23 +50,18 @@ def dashboard_summary(request):
 def cost_breakdown(request):
     date_from_str = request.query_params.get('date_from')
     date_to_str = request.query_params.get('date_to')
-    
-    if date_from_str:
-        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
-    else:
-        date_from = datetime.now().date() - timedelta(days=30)
-    
-    if date_to_str:
-        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
-    else:
-        date_to = datetime.now().date()
+
+    date_from = parse_date(date_from_str, timezone.now().date() - timedelta(days=30))
+    date_to = parse_date(date_to_str, timezone.now().date())
     
     logs = DailyWorkLog.objects.filter(
         log_date__range=[date_from, date_to]
-    ).select_related('work_type')
+    ).select_related('work_type', 'block')
     
     categories_data = {}
     for log in logs:
+        if not log.work_type:
+            continue
         category = log.work_type.category
         if category not in categories_data:
             categories_data[category] = {'cost': 0, 'work_types': {}, 'labour': 0}
@@ -67,7 +72,7 @@ def cost_breakdown(request):
         
         categories_data[category]['cost'] += total_cost
         categories_data[category]['labour'] += log.male_labour_count + log.female_labour_count
-        
+
         wt_name = log.work_type.name
         if wt_name not in categories_data[category]['work_types']:
             categories_data[category]['work_types'][wt_name] = {'cost': 0, 'labour': 0, 'logs': []}
@@ -86,6 +91,8 @@ def cost_breakdown(request):
     
     materials_data = {}
     for trans in material_trans:
+        if not trans.item:
+            continue
         cat = trans.item.category
         sub_cat = trans.item.sub_category or 'Other'
         if cat not in materials_data:
@@ -139,12 +146,12 @@ def cost_summary(request):
     if date_from_str:
         date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
     else:
-        date_from = datetime.now().date() - timedelta(days=30)
-    
+        date_from = timezone.now().date() - timedelta(days=30)
+
     if date_to_str:
         date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
     else:
-        date_to = datetime.now().date()
+        date_to = timezone.now().date()
     
     logs = DailyWorkLog.objects.filter(
         log_date__range=[date_from, date_to]
@@ -244,11 +251,11 @@ def work_trend(request):
     date_to_str = request.query_params.get('date_to')
     group_by = request.query_params.get('group_by', 'day')
     
-    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else datetime.now().date() - timedelta(days=90)
-    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else datetime.now().date()
-    
+    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else timezone.now().date() - timedelta(days=90)
+    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else timezone.now().date()
+
     logs = DailyWorkLog.objects.filter(log_date__range=[date_from, date_to])
-    
+
     trend_data = []
     
     if group_by == 'day':
@@ -303,9 +310,9 @@ def block_summary(request):
     date_from_str = request.query_params.get('date_from')
     date_to_str = request.query_params.get('date_to')
     
-    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else datetime.now().date() - timedelta(days=90)
-    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else datetime.now().date()
-    
+    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else timezone.now().date() - timedelta(days=90)
+    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else timezone.now().date()
+
     blocks = Block.objects.annotate(
         total_items=Count('work_logs', filter=Q(work_logs__log_date__range=[date_from, date_to])),
         total_male=Sum('work_logs__male_labour_count', filter=Q(work_logs__log_date__range=[date_from, date_to])),
@@ -332,9 +339,9 @@ def crop_summary(request):
     date_from_str = request.query_params.get('date_from')
     date_to_str = request.query_params.get('date_to')
     
-    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else datetime.now().date() - timedelta(days=90)
-    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else datetime.now().date()
-    
+    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else timezone.now().date() - timedelta(days=90)
+    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else timezone.now().date()
+
     crops = Crop.objects.annotate(
         total_items=Count('work_logs', filter=Q(work_logs__log_date__range=[date_from, date_to])),
         total_labour=Sum('work_logs__male_labour_count', filter=Q(work_logs__log_date__range=[date_from, date_to])) + Sum('work_logs__female_labour_count', filter=Q(work_logs__log_date__range=[date_from, date_to])),

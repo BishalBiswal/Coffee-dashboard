@@ -367,13 +367,20 @@ export default function WorkLogForm() {
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
-                  <input 
-                    type="number"
-                    value={materialQty}
-                    onChange={(e) => setMaterialQty(e.target.value)}
-                    className="input w-24"
-                    placeholder="Qty"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="number"
+                      value={materialQty}
+                      onChange={(e) => setMaterialQty(e.target.value)}
+                      className="input w-24"
+                      placeholder="Qty"
+                    />
+                    {selectedMaterial && (
+                      <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                        {materials.find(m => m.id === parseInt(selectedMaterial))?.unit}
+                      </span>
+                    )}
+                  </div>
                   <button 
                     type="button"
                     onClick={addMaterial}

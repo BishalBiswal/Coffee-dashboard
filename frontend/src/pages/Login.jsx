@@ -8,11 +8,18 @@ export default function Login() {
   const [credentials, setCredentials] = useState({ username: '', password: '' });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const success = await login(credentials.username, credentials.password);
     if (success) {
       toast.success('Welcome back!');
+    } else {
+      setCredentials({ username: '', password: '' });
+      toast.error('Invalid username or password');
     }
+    return false;
   };
 
   return (
@@ -62,8 +69,9 @@ export default function Login() {
           </div>
 
           <button
-            type="submit"
+            type="button"
             disabled={isLoading}
+            onClick={handleSubmit}
             className="w-full btn btn-primary py-3 disabled:opacity-50"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}

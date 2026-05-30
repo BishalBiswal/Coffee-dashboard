@@ -327,13 +327,18 @@ class InventoryTransaction(models.Model):
 
     def save(self, *args, **kwargs):
         from django.db.models import F
-        if self.transaction_type == 'IN':
-            InventoryItem.objects.filter(pk=self.item.pk).update(
-                current_stock=F('current_stock') + self.quantity
-            )
+        from django.db import transaction
+
+        if self.transaction_type == 'OUT':
+            with transaction.atomic():
+                item = InventoryItem.objects.select_for_update().get(pk=self.item.pk)
+                if item.current_stock < self.quantity:
+                    raise ValueError(f"Insufficient stock for {item.name}. Available: {item.current_stock}")
+                item.current_stock = F('current_stock') - self.quantity
+                item.save(update_fields=['current_stock'])
         else:
             InventoryItem.objects.filter(pk=self.item.pk).update(
-                current_stock=F('current_stock') - self.quantity
+                current_stock=F('current_stock') + self.quantity
             )
         self.item.refresh_from_db()
         super().save(*args, **kwargs)

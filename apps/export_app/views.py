@@ -4,9 +4,20 @@ from django.http import FileResponse
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from io import BytesIO
+from django.utils import timezone
 from datetime import datetime, timedelta
 from apps.core_app.models import DailyWorkLog, WorkLogAttendance, Worker
 from django.db.models import Sum
+
+
+def parse_date(param, default):
+    if not param:
+        return default
+    try:
+        from datetime import datetime
+        return datetime.strptime(param, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        return default
 
 
 @api_view(['GET'])
@@ -17,10 +28,12 @@ def export_excel(request):
     filter_type = request.query_params.get('filter', 'all')
     filter_id = request.query_params.get('filter_id')
     
-    date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date() if date_from_str else datetime.now().date() - timedelta(days=30)
-    date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date() if date_to_str else datetime.now().date()
+    date_from = parse_date(date_from_str, timezone.now().date() - timedelta(days=30))
+    date_to = parse_date(date_to_str, timezone.now().date())
     
-    logs = DailyWorkLog.objects.filter(log_date__range=[date_from, date_to]).select_related('block', 'crop', 'work_type', 'season')
+    logs = DailyWorkLog.objects.filter(
+        log_date__range=[date_from, date_to]
+    ).select_related('block', 'crop', 'work_type', 'season').prefetch_related('worklogattendance_set__worker')
     
     if filter_type == 'block' and filter_id:
         logs = logs.filter(block_id=filter_id)
@@ -53,8 +66,8 @@ def export_excel(request):
     
     for row_idx, log in enumerate(logs, 2):
         worker_names = ', '.join([
-            a.worker.name for a in 
-            WorkLogAttendance.objects.filter(work_log=log).select_related('worker')
+            a.worker.name for a in
+            log.worklogattendance_set.all()
         ])
         
         ws.cell(row=row_idx, column=1, value=log.log_date)

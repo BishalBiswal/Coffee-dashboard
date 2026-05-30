@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.db.models import Count, Sum, F
+from django.utils import timezone
 from datetime import datetime, timedelta
 
 from .models import Block, Crop, BlockCrop, Worker, WorkType, DailyWorkLog, WorkLogAttendance, Season, WeatherRecord, InventoryItem, InventoryTransaction, DailyAttendance
@@ -17,7 +18,7 @@ from .serializers import (
 
 
 class BlockViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Block.objects.all()
+    queryset = Block.objects.all().order_by('name')
     serializer_class = BlockSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
@@ -40,7 +41,7 @@ class BlockViewSet(viewsets.ReadOnlyModelViewSet):
     def work_logs(self, request, pk=None):
         block = self.get_object()
         date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to', datetime.now().date())
+        date_to = request.query_params.get('date_to', timezone.now().date())
         
         logs = DailyWorkLog.objects.filter(block=block)
         if date_from:
@@ -77,7 +78,7 @@ class BlockViewSet(viewsets.ReadOnlyModelViewSet):
             count=Count('id'),
             total_male=Sum('male_labour_count'),
             total_female=Sum('female_labour_count'),
-            total_hours=Sum(F('male_labour_count') + F('female_labour_count')) * Sum('hours_worked')
+            total_hours=Sum((F('male_labour_count') + F('female_labour_count')) * F('hours_worked'))
         ).order_by('-count')
         
         logs = logs_qs[:200]
@@ -129,7 +130,7 @@ class CropViewSet(viewsets.ReadOnlyModelViewSet):
             count=Count('id'),
             total_male=Sum('male_labour_count'),
             total_female=Sum('female_labour_count'),
-            total_hours=Sum(F('male_labour_count') + F('female_labour_count')) * Sum('hours_worked')
+            total_hours=Sum((F('male_labour_count') + F('female_labour_count')) * F('hours_worked'))
         ).order_by('-count')
         
         logs = logs_qs[:200]
@@ -150,8 +151,8 @@ class BlockCropViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def work_timeline(self, request, pk=None):
         lot = self.get_object()
-        date_from = request.query_params.get('date_from', datetime.now().date() - timedelta(days=90))
-        date_to = request.query_params.get('date_to', datetime.now().date())
+        date_from = request.query_params.get('date_from', timezone.now().date() - timedelta(days=90))
+        date_to = request.query_params.get('date_to', timezone.now().date())
         
         logs = DailyWorkLog.objects.filter(
             block=lot.block,
@@ -169,8 +170,8 @@ class BlockCropViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def row_details(self, request, pk=None):
         lot = self.get_object()
-        date_from = request.query_params.get('date_from', datetime.now().date() - timedelta(days=180))
-        date_to = request.query_params.get('date_to', datetime.now().date())
+        date_from = request.query_params.get('date_from', timezone.now().date() - timedelta(days=180))
+        date_to = request.query_params.get('date_to', timezone.now().date())
         
         rows_data = []
         for row_num in range(1, lot.num_rows + 1):
@@ -363,31 +364,33 @@ class DailyWorkLogViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         log = serializer.save()
         worker_ids = self.request.data.get('worker_ids', [])
-        
+
+        from django.db import transaction
         from .models import WorkLogAttendance, DailyAttendance
-        
-        log.workers.clear()
-        for worker_id in worker_ids:
-            WorkLogAttendance.objects.create(
-                work_log=log,
-                worker_id=worker_id,
-                hours_worked=log.hours_worked or 8,
-            )
-            
-            DailyAttendance.objects.update_or_create(
-                date=log.log_date,
-                worker_id=worker_id,
-                defaults={
-                    'present': True,
-                    'present_morning': True,
-                    'present_afternoon': True,
-                    'marked_by': self.request.user
-                }
-            )
+
+        with transaction.atomic():
+            log.workers.clear()
+            for worker_id in worker_ids:
+                WorkLogAttendance.objects.create(
+                    work_log=log,
+                    worker_id=worker_id,
+                    hours_worked=log.hours_worked or 8,
+                )
+
+                DailyAttendance.objects.update_or_create(
+                    date=log.log_date,
+                    worker_id=worker_id,
+                    defaults={
+                        'present': True,
+                        'present_morning': True,
+                        'present_afternoon': True,
+                        'marked_by': self.request.user
+                    }
+                )
         
     @action(detail=False, methods=['get'])
     def today(self, request):
-        today = datetime.now().date()
+        today = timezone.now().date()
         logs = self.get_queryset().filter(log_date=today)
         serializer = self.get_serializer(logs, many=True)
         return Response(serializer.data)
@@ -395,17 +398,24 @@ class DailyWorkLogViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def assign_workers(self, request, pk=None):
         log = self.get_object()
-        workers_data = request.data.get('workers', [])
         
-        log.workers.clear()
+        if isinstance(request.data, list):
+            workers_data = request.data
+        else:
+            workers_data = request.data.get('workers', [])
+
+        from django.db import transaction
         from .models import WorkLogAttendance
-        for w in workers_data:
-            WorkLogAttendance.objects.create(
-                work_log=log,
-                worker_id=w.get('worker_id'),
-                hours_worked=w.get('hours_worked', 8),
-            )
-        
+
+        with transaction.atomic():
+            log.workers.clear()
+            for w in workers_data:
+                WorkLogAttendance.objects.create(
+                    work_log=log,
+                    worker_id=w.get('worker_id'),
+                    hours_worked=w.get('hours_worked', 8),
+                )
+
         serializer = self.get_serializer(log)
         return Response(serializer.data)
 
@@ -420,8 +430,8 @@ class WeatherRecordViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def monthly(self, request):
-        year = int(request.query_params.get('year', datetime.now().year))
-        month = int(request.query_params.get('month', datetime.now().month))
+        year = int(request.query_params.get('year', timezone.now().year))
+        month = int(request.query_params.get('month', timezone.now().month))
         
         from calendar import monthrange
         _, last_day = monthrange(year, month)
@@ -444,7 +454,7 @@ class WeatherRecordViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def yearly(self, request):
-        year = int(request.query_params.get('year', datetime.now().year))
+        year = int(request.query_params.get('year', timezone.now().year))
         
         records = WeatherRecord.objects.filter(
             date__gte=f"{year}-01-01",

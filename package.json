@@ -1,0 +1,16 @@
+{
+  "name": "somepy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd .. && python manage.py collectstatic --noinput",
+    "start": "gunicorn field_project.wsgi --log-file -",
+    "migrate": "python manage.py migrate",
+    "collectstatic": "python manage.py collectstatic --noinput"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "python": ">=3.10"
+  },
+  "runtime": "python"
+}

@@ -21,7 +21,8 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isAuthRequest = originalRequest.url?.includes('/auth/login/') || originalRequest.url?.includes('/auth/refresh/');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refresh_token');
@@ -93,7 +94,7 @@ export const workLogsAPI = {
   update: (id, data) => api.patch(`/work-logs/${id}/`, data),
   delete: (id) => api.delete(`/work-logs/${id}/`),
   today: () => api.get('/work-logs/today/'),
-  assignWorkers: (id, workers) => api.post(`/work-logs/${id}/assign_workers/`, { workers }),
+  assignWorkers: (id, workers) => api.post(`/work-logs/${id}/assign_workers/`, workers),
 };
 
 export const workTypesAPI = {
