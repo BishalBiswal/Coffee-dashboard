@@ -2,7 +2,7 @@ import os
 
 from django.conf import settings
 from django.contrib import admin
-from django.http import JsonResponse, HttpResponseNotFound
+from django.http import FileResponse, JsonResponse, HttpResponseNotFound
 from django.urls import path, re_path, include
 from django.views import View
 from rest_framework.routers import DefaultRouter
