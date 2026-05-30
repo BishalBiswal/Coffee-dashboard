@@ -9,7 +9,8 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-' + os.urandom(48).hex())
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 _allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-# Include Railway-provided URL automatically
+# Always allow Railway healthcheck and auto-include Railway URL
+_allowed.append('healthcheck.railway.app')
 railway_url = os.environ.get('RAILWAY_STATIC_URL')
 if railway_url:
     _allowed.append(railway_url)
