@@ -2,7 +2,7 @@ import os
 
 from django.conf import settings
 from django.contrib import admin
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse, HttpResponseNotFound
 from django.urls import path, re_path, include
 from django.views import View
 from rest_framework.routers import DefaultRouter
@@ -48,7 +48,9 @@ urlpatterns = [
 class SPARootView(View):
     def get(self, request, *args, **kwargs):
         index_path = os.path.join(settings.BASE_DIR, 'frontend', 'dist', 'index.html')
-        return FileResponse(open(index_path, 'rb'))
+        if os.path.exists(index_path):
+            return FileResponse(open(index_path, 'rb'))
+        return HttpResponseNotFound("Frontend not built yet")
 
 # SPA fallback - serve index.html for non-API routes in production
 if os.environ.get('DEBUG', 'False') != 'True':
