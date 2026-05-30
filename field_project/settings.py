@@ -6,9 +6,7 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
-SECRET_KEY = os.environ.get('SECRET_KEY')
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable must be set")
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-' + os.urandom(48).hex())
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 _allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 # Include Railway-provided URL automatically
