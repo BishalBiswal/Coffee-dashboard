@@ -32,7 +32,6 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # Frontend build
-frontend/dist/
 frontend/.vite/
 
 # IDE
