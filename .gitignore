@@ -9,6 +9,7 @@ venv/
 ENV/
 *.egg-info/
 dist/
+!frontend/dist/
 build/
 
 # Django
