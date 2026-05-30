@@ -1,7 +1,10 @@
+import os
+
+from django.conf import settings
 from django.contrib import admin
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.urls import path, re_path, include
-from django.views.generic import TemplateView
+from django.views import View
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -42,7 +45,11 @@ urlpatterns = [
     path('api/export/', include('apps.export_app.urls')),
 ]
 
+class SPARootView(View):
+    def get(self, request, *args, **kwargs):
+        index_path = os.path.join(settings.BASE_DIR, 'frontend', 'dist', 'index.html')
+        return FileResponse(open(index_path, 'rb'))
+
 # SPA fallback - serve index.html for non-API routes in production
-import os
 if os.environ.get('DEBUG', 'False') != 'True':
-    urlpatterns.append(path('', TemplateView.as_view(template_name='index.html')))
+    urlpatterns.append(path('', SPARootView.as_view()))
