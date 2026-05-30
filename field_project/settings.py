@@ -82,10 +82,12 @@ else:
     use_sqlite = os.environ.get('USE_SQLITE', 'true').lower() == 'true'
     
     if use_sqlite:
+        db_dir = os.environ.get('DB_DIR', BASE_DIR)
+        os.makedirs(db_dir, exist_ok=True)
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+                'NAME': os.path.join(db_dir, 'db.sqlite3'),
             }
         }
     else:
